@@ -2,13 +2,11 @@ import requests
 from ics import Calendar, Event
 from datetime import datetime, timedelta, timezone
 
-# ----------------- 配置 -----------------
-API_KEY = "123"  # 你的 TheSportsDB 免费 key
+API_KEY = "123"  # 替换成你的TheSportsDB API Key
 LEAGUE_ID = "4429"
 SEASON = "2026"
 ICS_FILE = "worldcup2026_schedule.ics"
 
-# 国家对应中文+ISO码，用于国旗显示
 COUNTRIES = {
     "Mexico": ("墨西哥", "MX"), "South Africa": ("南非", "ZA"),
     "South Korea": ("韩国", "KR"), "Korea Republic": ("韩国", "KR"),
@@ -40,7 +38,6 @@ COUNTRIES = {
     "Saudi Arabia": ("沙特", "SA"), "New Zealand": ("新西兰", "NZ"),
 }
 
-# 城市中文映射
 CITIES = {
     "Los Angeles": "洛杉矶", "Inglewood": "洛杉矶",
     "New York": "纽约", "East Rutherford": "纽约",
@@ -55,13 +52,11 @@ CITIES = {
     "Monterrey": "蒙特雷",
 }
 
-# 场地所在国家
 HOST_COUNTRIES = {
     "United States": "美国", "USA": "美国",
     "Canada": "加拿大", "Mexico": "墨西哥",
 }
 
-# ----------------- 工具函数 -----------------
 def emoji(code):
     if not code or len(code) < 2:
         return ""
@@ -69,7 +64,7 @@ def emoji(code):
     return chr(ord(code[0]) + 127397) + chr(ord(code[1]) + 127397)
 
 def team_cn(name):
-    if not name or str(name).lower() in ["tbd", "to be determined"]:
+    if not name:
         return "待定"
     cn, code = COUNTRIES.get(name, (name, ""))
     flag = emoji(code)
@@ -77,21 +72,21 @@ def team_cn(name):
 
 def stage_text(event):
     group = event.get("strGroup") or event.get("strGroupName")
-    round_name = event.get("strRound") or event.get("intRound") or event.get("strStage") or ""
+    if group:
+        mapping = {
+            "Group A": "A组", "Group B": "B组", "Group C": "C组", "Group D": "D组",
+            "Group E": "E组", "Group F": "F组", "Group G": "G组", "Group H": "H组",
+            "Group I": "I组", "Group J": "J组", "Group K": "K组", "Group L": "L组",
+        }
+        return mapping.get(group, group)
 
-    text = str(group or round_name or "").strip()
-
+    stage = event.get("strStage") or ""
     mapping = {
-        "Group A": "A组", "Group B": "B组", "Group C": "C组", "Group D": "D组",
-        "Group E": "E组", "Group F": "F组", "Group G": "G组", "Group H": "H组",
-        "Group I": "I组", "Group J": "J组", "Group K": "K组", "Group L": "L组",
-        "Round of 16": "16强", "Last 16": "16强",
-        "Quarter-final": "8强", "Quarter-finals": "8强",
-        "Semi-final": "半决赛", "Semi-finals": "半决赛",
-        "Final": "决赛", "Third-place play-off": "三四名决赛",
+        "Round of 16": "16强", "Quarter-finals": "8强",
+        "Semi-finals": "半决赛", "Final": "决赛",
+        "Third-place play-off": "三四名决赛",
     }
-
-    return mapping.get(text, text.replace("Group ", "") + "组" if text.startswith("Group ") else text)
+    return mapping.get(stage, stage)
 
 def score(event):
     hs = event.get("intHomeScore")
@@ -101,19 +96,17 @@ def score(event):
     return f"{hs}-{aw}"
 
 def is_live(event):
-    status = (event.get("strStatus") or "").lower()
-    live_words = ["live", "in progress", "1st half", "2nd half", "halftime", "extra time"]
-    return any(w in status for w in live_words)
+    start = parse_time(event)
+    if not start:
+        return False
+    now = datetime.now(timezone.utc)
+    elapsed = (now - start).total_seconds()
+    return 0 <= elapsed <= 7200
 
 def title(event):
-    home_raw = event.get("strHomeTeam")
-    away_raw = event.get("strAwayTeam")
-
-    home = team_cn(home_raw)
-    away = team_cn(away_raw)
-
+    home = team_cn(event.get("strHomeTeam"))
+    away = team_cn(event.get("strAwayTeam"))
     s = score(event)
-
     stage = stage_text(event)
 
     if s:
@@ -125,7 +118,7 @@ def title(event):
         line += f"｜{stage}"
 
     if is_live(event):
-        return f"比赛中\n\n{line}"
+        return f"比赛中\n{line}"
 
     return line
 
@@ -133,12 +126,9 @@ def location(event):
     venue = event.get("strVenue") or ""
     city_raw = event.get("strCity") or ""
     country_raw = event.get("strCountry") or ""
-
     city_cn = CITIES.get(city_raw, city_raw)
     country_cn = HOST_COUNTRIES.get(country_raw, country_raw)
-
     prefix = f"{country_cn}{city_cn}".strip()
-
     if prefix and venue:
         return f"{prefix} · {venue}"
     if venue:
@@ -148,58 +138,42 @@ def location(event):
 def parse_time(event):
     date_str = event.get("dateEvent")
     time_str = event.get("strTime") or "00:00:00"
-
     if not date_str:
         return None
-
     time_str = time_str.replace("Z", "").replace("+00:00", "")[:8]
-
     dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
     return dt.replace(tzinfo=timezone.utc)
 
-# ----------------- 数据抓取 -----------------
 def fetch_matches():
     url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}/eventsseason.php"
     params = {"id": LEAGUE_ID, "s": SEASON}
-
     r = requests.get(url, params=params)
     r.raise_for_status()
-
     return r.json().get("events") or []
 
-# ----------------- 生成日历 -----------------
 def create_calendar(matches):
     cal = Calendar()
-
     for m in matches:
         start = parse_time(m)
         if not start:
             continue
-
         e = Event()
         e.name = title(m)
         e.begin = start
         e.end = start + timedelta(hours=2)
         e.location = location(m)
         e.description = location(m)
-
         event_id = m.get("idEvent")
         if event_id:
             e.uid = f"worldcup2026-{event_id}@github"
-
         cal.events.add(e)
-
     return cal
 
-# ----------------- 主函数 -----------------
 def main():
     matches = fetch_matches()
-
     cal = create_calendar(matches)
-
     with open(ICS_FILE, "w", encoding="utf-8") as f:
         f.writelines(cal)
-
 
 if __name__ == "__main__":
     main()
