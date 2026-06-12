@@ -34,6 +34,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "2026世界杯赛程_中文北京时间_iPhone_iPad.ics"
+          git add "worldcup2026_schedule.ics"
           git commit -m "Auto update World Cup calendar" || echo "No changes"
           git push
