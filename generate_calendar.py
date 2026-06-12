@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 # 你的 football-data.org token
 TOKEN = "a5507e9b27da40b9a0f49744f268d163"
-ICS_FILE = "2026世界杯赛程_中文北京时间_iPhone_iPad.ics"
+ICS_FILE = "worldcup2026_schedule.ics"
 
 def fetch_matches():
     url = "https://api.football-data.org/v4/matches"
