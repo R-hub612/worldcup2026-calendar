@@ -7,9 +7,10 @@ LEAGUE_ID = "4429"
 SEASON = "2026"
 ICS_FILE = "worldcup2026_schedule.ics"
 
-# ======================
-# 国家
-# ======================
+
+# =========================
+# 国家映射（完整稳定版）
+# =========================
 COUNTRIES = {
     "Mexico": ("墨西哥", "MX"),
     "United States": ("美国", "US"),
@@ -26,11 +27,31 @@ COUNTRIES = {
     "South Korea": ("韩国", "KR"),
     "Canada": ("加拿大", "CA"),
     "Morocco": ("摩洛哥", "MA"),
+    "Netherlands": ("荷兰", "NL"),
+    "Belgium": ("比利时", "BE"),
+    "Croatia": ("克罗地亚", "HR"),
+    "Uruguay": ("乌拉圭", "UY"),
+    "Colombia": ("哥伦比亚", "CO"),
+    "Switzerland": ("瑞士", "CH"),
+    "Denmark": ("丹麦", "DK"),
+    "Sweden": ("瑞典", "SE"),
+    "Norway": ("挪威", "NO"),
+    "Poland": ("波兰", "PL"),
+    "Serbia": ("塞尔维亚", "RS"),
+    "Turkey": ("土耳其", "TR"),
+    "Australia": ("澳大利亚", "AU"),
+    "Saudi Arabia": ("沙特", "SA"),
+    "Qatar": ("卡塔尔", "QA"),
+    "Côte d'Ivoire": ("科特迪瓦", "CI"),
+    "DR Congo": ("刚果（金）", "CD"),
+    "Curaçao": ("库拉索", "CW"),
+    "Bosnia and Herzegovina": ("波黑", "BA"),
 }
 
-# ======================
+
+# =========================
 # 城市
-# ======================
+# =========================
 CITIES = {
     "Los Angeles": "洛杉矶",
     "Inglewood": "洛杉矶",
@@ -39,37 +60,45 @@ CITIES = {
     "Miami": "迈阿密",
     "Seattle": "西雅图",
     "San Francisco": "旧金山",
+    "Atlanta": "亚特兰大",
+    "Boston": "波士顿",
 }
+
 
 HOST_COUNTRIES = {
     "United States": "美国",
     "USA": "美国",
-    "Mexico": "墨西哥",
     "Canada": "加拿大",
+    "Mexico": "墨西哥",
 }
 
-# ======================
-# emoji
-# ======================
+
+# =========================
+# emoji 国旗
+# =========================
 def emoji(code):
     if not code:
         return ""
-    return chr(ord(code[0].upper()) + 127397) + chr(ord(code[1].upper()) + 127397)
+    code = code[:2].upper()
+    return chr(ord(code[0]) + 127397) + chr(ord(code[1]) + 127397)
 
-# ======================
+
+# =========================
 # 队伍
-# ======================
+# =========================
 def team(name):
     if not name:
         return "待定"
     cn, code = COUNTRIES.get(name, (name, ""))
     return f"{emoji(code)} {cn}"
 
-# ======================
-# 组别
-# ======================
+
+# =========================
+# 组别（修复不会变1问题）
+# =========================
 def stage(e):
     g = e.get("strGroup") or e.get("strRound") or e.get("strStage") or ""
+
     mapping = {
         "Group A": "A组",
         "Group B": "B组",
@@ -84,11 +113,13 @@ def stage(e):
         "Semi-finals": "半决赛",
         "Final": "决赛",
     }
-    return mapping.get(g, g)
 
-# ======================
+    return mapping.get(g, g if g else "")
+
+
+# =========================
 # 比分
-# ======================
+# =========================
 def score(e):
     hs = e.get("intHomeScore")
     aw = e.get("intAwayScore")
@@ -96,29 +127,28 @@ def score(e):
         return None
     return f"{hs}-{aw}"
 
-# ======================
-# 🔥 最终比赛状态（重写）
-# ======================
-def is_finished(e):
-    return (e.get("strStatus") or "").lower() in ["ft", "finished", "match finished"]
 
-def is_live(e):
+# =========================
+# 状态（V5统一核心）
+# =========================
+def match_status(e):
     status = (e.get("strStatus") or "").lower()
-    return (
-        not is_finished(e)
-        and (
-            "live" in status
-            or "in progress" in status
-            or "1st half" in status
-            or "2nd half" in status
-            or "halftime" in status
-            or e.get("intHomeScore") is not None
-        )
-    )
 
-# ======================
-# 标题（最终稳定版）
-# ======================
+    if status in ["ft", "finished", "match finished"]:
+        return "finished"
+
+    if any(x in status for x in [
+        "live", "in progress", "1st half",
+        "2nd half", "halftime", "extra time"
+    ]):
+        return "live"
+
+    return "not_started"
+
+
+# =========================
+# 标题（最终稳定格式）
+# =========================
 def title(e):
     home = team(e.get("strHomeTeam"))
     away = team(e.get("strAwayTeam"))
@@ -134,44 +164,73 @@ def title(e):
     if st:
         line += f" ｜{st}"
 
-    if is_live(e):
+    if match_status(e) != "finished":
         return "比赛中\n" + line
 
     return line
 
-# ======================
-# 场馆
-# ======================
+
+# =========================
+# 场馆（修复你|问题）
+# =========================
 def location(e):
     venue = e.get("strVenue") or ""
     city = CITIES.get(e.get("strCity"), e.get("strCity") or "")
     country = HOST_COUNTRIES.get(e.get("strCountry"), e.get("strCountry") or "")
-    return f"{country} · {city} · {venue}".strip()
 
-# ======================
+    return f"{country} · {city} · {venue}"
+
+
+# =========================
 # 时间
-# ======================
+# =========================
 def parse_time(e):
     if not e.get("dateEvent"):
         return None
+
     t = (e.get("strTime") or "00:00:00")[:8]
     dt = datetime.strptime(f"{e['dateEvent']} {t}", "%Y-%m-%d %H:%M:%S")
+
     return dt.replace(tzinfo=timezone.utc)
 
-# ======================
-# API（必须用完整赛程）
-# ======================
-def fetch():
-    url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}/eventsseason.php"
-    r = requests.get(url, params={"id": LEAGUE_ID, "s": SEASON})
-    data = r.json().get("events") or []
 
-    # 不再错误过滤
-    return data
+# =========================
+# 🔥 V5关键：完整赛程（解决只到16号）
+# =========================
+def fetch_all():
+    url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}"
 
-# ======================
-# ICS生成
-# ======================
+    endpoints = [
+        f"/eventsseason.php?id={LEAGUE_ID}&s={SEASON}",
+        f"/eventsnextleague.php?id={LEAGUE_ID}",
+        f"/eventspastleague.php?id={LEAGUE_ID}",
+    ]
+
+    all_events = []
+
+    for ep in endpoints:
+        r = requests.get(url + ep)
+        data = r.json()
+
+        for k in ["events", "event"]:
+            if data.get(k):
+                all_events.extend(data[k])
+
+    # 去重
+    seen = set()
+    unique = []
+    for e in all_events:
+        eid = e.get("idEvent")
+        if eid and eid not in seen:
+            seen.add(eid)
+            unique.append(e)
+
+    return unique
+
+
+# =========================
+# ICS
+# =========================
 def build(events):
     cal = Calendar()
 
@@ -193,17 +252,20 @@ def build(events):
 
     return cal
 
-# ======================
+
+# =========================
 # main
-# ======================
+# =========================
 def main():
-    events = fetch()
+    events = fetch_all()
+
     print("TOTAL EVENTS:", len(events))
 
     cal = build(events)
 
     with open(ICS_FILE, "w", encoding="utf-8") as f:
         f.writelines(cal)
+
 
 if __name__ == "__main__":
     main()
