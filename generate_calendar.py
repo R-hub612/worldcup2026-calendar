@@ -9,7 +9,7 @@ ICS_FILE = "worldcup2026_schedule.ics"
 
 
 # =========================
-# 国家（核心修复：补全 + fallback）
+# 国家映射（稳定+fallback）
 # =========================
 COUNTRIES = {
     "Mexico": ("墨西哥", "MX"),
@@ -42,11 +42,6 @@ COUNTRIES = {
     "Australia": ("澳大利亚", "AU"),
     "Saudi Arabia": ("沙特", "SA"),
     "Qatar": ("卡塔尔", "QA"),
-    "Czech Republic": ("捷克", "CZ"),
-    "Haiti": ("海地", "HT"),
-    "Scotland": ("苏格兰", "GB"),
-    "Paraguay": ("巴拉圭", "PY"),
-    "Cape Verde": ("佛得角", "CV"),
 }
 
 
@@ -73,30 +68,33 @@ HOST_COUNTRIES = {
 
 
 # =========================
-# emoji（安全版）
+# emoji
 # =========================
 def emoji(code):
-    if not code or len(code) < 2:
+    if not code:
         return ""
     return chr(ord(code[0].upper()) + 127397) + chr(ord(code[1].upper()) + 127397)
 
 
 # =========================
-# 队伍（关键修复 fallback）
+# 队伍（最终稳定）
 # =========================
 def team(name):
     if not name:
         return "待定"
 
-    cn, code = COUNTRIES.get(name, (name, ""))
-    flag = emoji(code)
+    cn, code = COUNTRIES.get(name, (None, None))
 
-    # 如果没中文映射 → 直接用英文（避免空/错乱）
-    return f"{flag} {cn}" if cn else name
+    flag = emoji(code) if code else ""
+
+    if not cn:
+        return f"{flag} {name}"
+
+    return f"{flag} {cn}"
 
 
 # =========================
-# 组别（修复稳定）
+# 组别
 # =========================
 def stage(e):
     g = e.get("strGroup") or e.get("strRound") or e.get("strStage") or ""
@@ -131,52 +129,52 @@ def score(e):
 
 
 # =========================
-# 状态（彻底修复）
+# 状态（严格三态）
 # =========================
-def match_status(e):
-    status = (e.get("strStatus") or "").lower()
+def status(e):
+    s = (e.get("strStatus") or "").lower()
 
-    if status in ["ft", "finished", "match finished"]:
+    if s in ["ft", "finished", "match finished"]:
         return "finished"
 
-    if "live" in status or "in progress" in status:
+    if "live" in s or "in progress" in s:
         return "live"
 
     return "not_started"
 
 
 # =========================
-# 标题（最终稳定格式）
+# 标题
 # =========================
 def title(e):
     home = team(e.get("strHomeTeam"))
     away = team(e.get("strAwayTeam"))
 
-    s = score(e)
     st = stage(e)
+    sc = score(e)
 
-    if s:
-        line = f"{home} {s} {away}"
+    if sc:
+        line = f"{home} {sc} {away}"
     else:
         line = f"{home} vs {away}"
 
     if st:
         line += f" ｜{st}"
 
-    # 关键修复：只有进行中才显示比赛中
-    if match_status(e) == "live":
+    if status(e) == "live":
         return "比赛中\n" + line
 
     return line
 
 
 # =========================
-# 场馆
+# 场地
 # =========================
 def location(e):
     venue = e.get("strVenue") or ""
     city = CITIES.get(e.get("strCity"), e.get("strCity") or "")
     country = HOST_COUNTRIES.get(e.get("strCountry"), e.get("strCountry") or "")
+
     return f"{country} · {city} · {venue}"
 
 
@@ -189,14 +187,15 @@ def parse_time(e):
 
     t = (e.get("strTime") or "00:00:00")[:8]
     dt = datetime.strptime(f"{e['dateEvent']} {t}", "%Y-%m-%d %H:%M:%S")
+
     return dt.replace(tzinfo=timezone.utc)
 
 
 # =========================
-# API（修复：完整赛程）
+# API（稳定三源）
 # =========================
-def fetch_all():
-    url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}"
+def fetch():
+    base = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}"
 
     endpoints = [
         f"/eventsseason.php?id={LEAGUE_ID}&s={SEASON}",
@@ -204,20 +203,19 @@ def fetch_all():
         f"/eventspastleague.php?id={LEAGUE_ID}",
     ]
 
-    all_events = []
+    all_data = []
 
     for ep in endpoints:
-        r = requests.get(url + ep)
-        data = r.json()
-
-        if data.get("events"):
-            all_events += data["events"]
+        r = requests.get(base + ep)
+        j = r.json()
+        if j.get("events"):
+            all_data += j["events"]
 
     # 去重
     seen = set()
     result = []
 
-    for e in all_events:
+    for e in all_data:
         eid = e.get("idEvent")
         if eid and eid not in seen:
             seen.add(eid)
@@ -227,7 +225,7 @@ def fetch_all():
 
 
 # =========================
-# ICS
+# ICS生成
 # =========================
 def build(events):
     cal = Calendar()
@@ -255,8 +253,8 @@ def build(events):
 # main
 # =========================
 def main():
-    events = fetch_all()
-    print("TOTAL:", len(events))
+    events = fetch()
+    print("TOTAL EVENTS:", len(events))
 
     cal = build(events)
 
