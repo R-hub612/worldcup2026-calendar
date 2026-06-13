@@ -8,225 +8,159 @@ SEASON = "2026"
 ICS_FILE = "worldcup2026_schedule.ics"
 
 
-# =========================
-# 国家映射（稳定+fallback）
-# =========================
-COUNTRIES = {
-    "Mexico": ("墨西哥", "MX"),
-    "United States": ("美国", "US"),
-    "USA": ("美国", "US"),
-    "Spain": ("西班牙", "ES"),
-    "Brazil": ("巴西", "BR"),
-    "France": ("法国", "FR"),
-    "Argentina": ("阿根廷", "AR"),
-    "Germany": ("德国", "DE"),
-    "England": ("英格兰", "GB"),
-    "Portugal": ("葡萄牙", "PT"),
-    "Japan": ("日本", "JP"),
-    "Korea Republic": ("韩国", "KR"),
-    "South Korea": ("韩国", "KR"),
-    "Canada": ("加拿大", "CA"),
-    "Morocco": ("摩洛哥", "MA"),
-    "Netherlands": ("荷兰", "NL"),
-    "Belgium": ("比利时", "BE"),
-    "Croatia": ("克罗地亚", "HR"),
-    "Uruguay": ("乌拉圭", "UY"),
-    "Colombia": ("哥伦比亚", "CO"),
-    "Switzerland": ("瑞士", "CH"),
-    "Denmark": ("丹麦", "DK"),
-    "Sweden": ("瑞典", "SE"),
-    "Norway": ("挪威", "NO"),
-    "Poland": ("波兰", "PL"),
-    "Serbia": ("塞尔维亚", "RS"),
-    "Turkey": ("土耳其", "TR"),
-    "Australia": ("澳大利亚", "AU"),
-    "Saudi Arabia": ("沙特", "SA"),
-    "Qatar": ("卡塔尔", "QA"),
+# =========================================================
+# 🔥 48队封闭世界模型（核心稳定层）
+# =========================================================
+TEAM_DB = {
+    "mexico": {"cn": "墨西哥", "code": "MX", "emoji": "🇲🇽"},
+    "south africa": {"cn": "南非", "code": "RSA", "emoji": "🇿🇦"},
+    "korea republic": {"cn": "韩国", "code": "KOR", "emoji": "🇰🇷"},
+    "south korea": {"cn": "韩国", "code": "KOR", "emoji": "🇰🇷"},
+    "czechia": {"cn": "捷克", "code": "CZE", "emoji": "🇨🇿"},
+    "czech republic": {"cn": "捷克", "code": "CZE", "emoji": "🇨🇿"},
+
+    "canada": {"cn": "加拿大", "code": "CAN", "emoji": "🇨🇦"},
+    "bosnia and herzegovina": {"cn": "波黑", "code": "BIH", "emoji": "🇧🇦"},
+    "bosnia-herzegovina": {"cn": "波黑", "code": "BIH", "emoji": "🇧🇦"},
+    "qatar": {"cn": "卡塔尔", "code": "QAT", "emoji": "🇶🇦"},
+    "switzerland": {"cn": "瑞士", "code": "SUI", "emoji": "🇨🇭"},
+
+    "brazil": {"cn": "巴西", "code": "BRA", "emoji": "🇧🇷"},
+    "morocco": {"cn": "摩洛哥", "code": "MAR", "emoji": "🇲🇦"},
+    "haiti": {"cn": "海地", "code": "HTI", "emoji": "🇭🇹"},
+    "scotland": {"cn": "苏格兰", "code": "SCO", "emoji": "🏴"},
+
+    "united states": {"cn": "美国", "code": "USA", "emoji": "🇺🇸"},
+    "usa": {"cn": "美国", "code": "USA", "emoji": "🇺🇸"},
+    "paraguay": {"cn": "巴拉圭", "code": "PAR", "emoji": "🇵🇾"},
+    "australia": {"cn": "澳大利亚", "code": "AUS", "emoji": "🇦🇺"},
+    "turkey": {"cn": "土耳其", "code": "TUR", "emoji": "🇹🇷"},
+
+    "germany": {"cn": "德国", "code": "GER", "emoji": "🇩🇪"},
+    "curacao": {"cn": "库拉索", "code": "CUW", "emoji": "🇨🇼"},
+    "cote d'ivoire": {"cn": "科特迪瓦", "code": "CIV", "emoji": "🇨🇮"},
+    "côte d’ivoire": {"cn": "科特迪瓦", "code": "CIV", "emoji": "🇨🇮"},
+    "ecuador": {"cn": "厄瓜多尔", "code": "ECU", "emoji": "🇪🇨"},
+
+    "netherlands": {"cn": "荷兰", "code": "NED", "emoji": "🇳🇱"},
+    "japan": {"cn": "日本", "code": "JPN", "emoji": "🇯🇵"},
+    "sweden": {"cn": "瑞典", "code": "SWE", "emoji": "🇸🇪"},
+    "tunisia": {"cn": "突尼斯", "code": "TUN", "emoji": "🇹🇳"},
+
+    "belgium": {"cn": "比利时", "code": "BEL", "emoji": "🇧🇪"},
+    "egypt": {"cn": "埃及", "code": "EGY", "emoji": "🇪🇬"},
+    "iran": {"cn": "伊朗", "code": "IRN", "emoji": "🇮🇷"},
+    "new zealand": {"cn": "新西兰", "code": "NZL", "emoji": "🇳🇿"},
+
+    "spain": {"cn": "西班牙", "code": "ESP", "emoji": "🇪🇸"},
+    "cape verde": {"cn": "佛得角", "code": "CPV", "emoji": "🇨🇻"},
+    "saudi arabia": {"cn": "沙特阿拉伯", "code": "KSA", "emoji": "🇸🇦"},
+    "uruguay": {"cn": "乌拉圭", "code": "URU", "emoji": "🇺🇾"},
+
+    "france": {"cn": "法国", "code": "FRA", "emoji": "🇫🇷"},
+    "senegal": {"cn": "塞内加尔", "code": "SEN", "emoji": "🇸🇳"},
+    "iraq": {"cn": "伊拉克", "code": "IRQ", "emoji": "🇮🇶"},
+    "norway": {"cn": "挪威", "code": "NOR", "emoji": "🇳🇴"},
+
+    "argentina": {"cn": "阿根廷", "code": "ARG", "emoji": "🇦🇷"},
+    "algeria": {"cn": "阿尔及利亚", "code": "DZA", "emoji": "🇩🇿"},
+    "austria": {"cn": "奥地利", "code": "AUT", "emoji": "🇦🇹"},
+    "jordan": {"cn": "约旦", "code": "JOR", "emoji": "🇯🇴"},
+
+    "portugal": {"cn": "葡萄牙", "code": "POR", "emoji": "🇵🇹"},
+    "dr congo": {"cn": "刚果（金）", "code": "COD", "emoji": "🇨🇩"},
+    "uzbekistan": {"cn": "乌兹别克斯坦", "code": "UZB", "emoji": "🇺🇿"},
+    "colombia": {"cn": "哥伦比亚", "code": "COL", "emoji": "🇨🇴"},
+
+    "england": {"cn": "英格兰", "code": "ENG", "emoji": "🏴"},
+    "croatia": {"cn": "克罗地亚", "code": "CRO", "emoji": "🇭🇷"},
+    "ghana": {"cn": "加纳", "code": "GHA", "emoji": "🇬🇭"},
+    "panama": {"cn": "巴拿马", "code": "PAN", "emoji": "🇵🇦"},
 }
 
 
-# =========================
-# 城市
-# =========================
-CITIES = {
-    "Los Angeles": "洛杉矶",
-    "New York": "纽约",
-    "Dallas": "达拉斯",
-    "Miami": "迈阿密",
-    "Seattle": "西雅图",
-    "San Francisco": "旧金山",
-    "Atlanta": "亚特兰大",
-    "Boston": "波士顿",
-}
-
-HOST_COUNTRIES = {
-    "United States": "美国",
-    "USA": "美国",
-    "Canada": "加拿大",
-    "Mexico": "墨西哥",
-}
-
-
-# =========================
-# emoji
-# =========================
-def emoji(code):
-    if not code:
-        return ""
-    return chr(ord(code[0].upper()) + 127397) + chr(ord(code[1].upper()) + 127397)
-
-
-# =========================
-# 队伍（最终稳定）
-# =========================
-def team(name):
+# =========================================================
+# normalize（关键稳定层）
+# =========================================================
+def norm(name):
     if not name:
-        return "待定"
-
-    cn, code = COUNTRIES.get(name, (None, None))
-
-    flag = emoji(code) if code else ""
-
-    if not cn:
-        return f"{flag} {name}"
-
-    return f"{flag} {cn}"
+        return ""
+    return name.strip().lower()
 
 
-# =========================
-# 组别
-# =========================
-def stage(e):
-    g = e.get("strGroup") or e.get("strRound") or e.get("strStage") or ""
-
-    mapping = {
-        "Group A": "A组",
-        "Group B": "B组",
-        "Group C": "C组",
-        "Group D": "D组",
-        "Group E": "E组",
-        "Group F": "F组",
-        "Group G": "G组",
-        "Group H": "H组",
-        "Round of 16": "16强",
-        "Quarter-finals": "8强",
-        "Semi-finals": "半决赛",
-        "Final": "决赛",
-    }
-
-    return mapping.get(g, g if g else "")
+def team(name):
+    n = norm(name)
+    if n in TEAM_DB:
+        t = TEAM_DB[n]
+        return f"{t['emoji']} {t['cn']}"
+    return f"🏳️ {name}"
 
 
-# =========================
-# 比分
-# =========================
-def score(e):
-    hs = e.get("intHomeScore")
-    aw = e.get("intAwayScore")
-    if hs is None or aw is None:
-        return None
-    return f"{hs}-{aw}"
-
-
-# =========================
-# 状态（严格三态）
-# =========================
+# =========================================================
+# 状态（严格 API 驱动）
+# =========================================================
 def status(e):
-    s = (e.get("strStatus") or "").lower()
+    s = (e.get("strStatus") or "").upper()
 
-    if s in ["ft", "finished", "match finished"]:
-        return "finished"
-
-    if "live" in s or "in progress" in s:
-        return "live"
-
-    return "not_started"
+    if s == "FT":
+        return "FT"
+    if s in ["1H", "2H", "LIVE", "IN PLAY"]:
+        return "LIVE"
+    return "NS"
 
 
-# =========================
-# 标题
-# =========================
+# =========================================================
+# 比分
+# =========================================================
+def score(e):
+    h = e.get("intHomeScore")
+    a = e.get("intAwayScore")
+    if h is None or a is None:
+        return None
+    return f"{h}-{a}"
+
+
+# =========================================================
+# 标题（最终规则）
+# =========================================================
 def title(e):
     home = team(e.get("strHomeTeam"))
     away = team(e.get("strAwayTeam"))
-
-    st = stage(e)
     sc = score(e)
 
+    base = f"{home} vs {away}"
     if sc:
-        line = f"{home} {sc} {away}"
-    else:
-        line = f"{home} vs {away}"
+        base = f"{home} {sc} {away}"
 
-    if st:
-        line += f" ｜{st}"
+    if status(e) == "LIVE":
+        return "▶️ 比赛中\n" + base
 
-    if status(e) == "live":
-        return "比赛中\n" + line
-
-    return line
+    return base
 
 
-# =========================
-# 场地
-# =========================
-def location(e):
-    venue = e.get("strVenue") or ""
-    city = CITIES.get(e.get("strCity"), e.get("strCity") or "")
-    country = HOST_COUNTRIES.get(e.get("strCountry"), e.get("strCountry") or "")
-
-    return f"{country} · {city} · {venue}"
-
-
-# =========================
+# =========================================================
 # 时间
-# =========================
+# =========================================================
 def parse_time(e):
     if not e.get("dateEvent"):
         return None
-
     t = (e.get("strTime") or "00:00:00")[:8]
     dt = datetime.strptime(f"{e['dateEvent']} {t}", "%Y-%m-%d %H:%M:%S")
-
     return dt.replace(tzinfo=timezone.utc)
 
 
-# =========================
-# API（稳定三源）
-# =========================
+# =========================================================
+# API（单源原则！！！）
+# =========================================================
 def fetch():
-    base = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}"
-
-    endpoints = [
-        f"/eventsseason.php?id={LEAGUE_ID}&s={SEASON}",
-        f"/eventsnextleague.php?id={LEAGUE_ID}",
-        f"/eventspastleague.php?id={LEAGUE_ID}",
-    ]
-
-    all_data = []
-
-    for ep in endpoints:
-        r = requests.get(base + ep)
-        j = r.json()
-        if j.get("events"):
-            all_data += j["events"]
-
-    # 去重
-    seen = set()
-    result = []
-
-    for e in all_data:
-        eid = e.get("idEvent")
-        if eid and eid not in seen:
-            seen.add(eid)
-            result.append(e)
-
-    return result
+    url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}/eventsseason.php"
+    r = requests.get(url, params={"id": LEAGUE_ID, "s": SEASON})
+    return r.json().get("events") or []
 
 
-# =========================
-# ICS生成
-# =========================
+# =========================================================
+# ICS
+# =========================================================
 def build(events):
     cal = Calendar()
 
@@ -239,7 +173,8 @@ def build(events):
         ev.name = title(e)
         ev.begin = start
         ev.end = start + timedelta(hours=2)
-        ev.location = location(e)
+
+        ev.location = f"{e.get('strCountry','')} · {e.get('strCity','')} · {e.get('strVenue','')}"
 
         if e.get("idEvent"):
             ev.uid = f"wc2026-{e['idEvent']}"
@@ -249,12 +184,9 @@ def build(events):
     return cal
 
 
-# =========================
-# main
-# =========================
 def main():
     events = fetch()
-    print("TOTAL EVENTS:", len(events))
+    print("TOTAL:", len(events))
 
     cal = build(events)
 
